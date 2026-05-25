@@ -1,0 +1,19 @@
+# Compiled binary
+app.exe
+*.o
+*.obj
+
+# Debug files
+*.pdb
+
+# VS Code user-specific settings (keep .vscode/*.json files though!)
+.vscode/settings.json
+.vscode/ipch/
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Build artifacts
+build/
+out/
