@@ -1,7 +1,13 @@
 // Game.cpp - implementation of the Game class.
 // This file contains the actual code; Game.h only declared what exists.
-
+#include "PlayerTank.h"
 #include "Game.h"
+#include <algorithm>   // for std::remove_if
+#include "Wall.h"
+
+
+
+
 
 // Constructor:
 // Uses a member initializer list to construct the window directly.
@@ -10,31 +16,35 @@
 Game::Game()
     : window(sf::VideoMode(sf::Vector2u(800, 600)), "Tanks 2077")
 {
+    
     // Limit the framerate to 60 FPS - prevents the game from running too fast
     // on powerful machines and reduces unnecessary CPU usage.
     window.setFramerateLimit(60);
-
+    // Create the player tank in the center of the window.
+    // make_unique<PlayerTank>(400, 300) creates the object and returns a unique_ptr.
+    // emplace_back moves it into the vector.
+    // Even though the vector stores GameObject*, this works because PlayerTank IS-A GameObject.
+    objects.emplace_back(std::make_unique<PlayerTank>(400.0f, 300.0f));
     // The objects vector starts empty. Subclasses (Tank, Wall...) will be
     // added in future phases via std::make_unique<...>().
+
+    // Add a few walls around the map to test collision.
+    objects.emplace_back(std::make_unique<Wall>(100.0f, 100.0f, 40.0f, 200.0f, 3));
+    objects.emplace_back(std::make_unique<Wall>(600.0f, 200.0f, 40.0f, 200.0f, 3));
+    objects.emplace_back(std::make_unique<Wall>(300.0f, 450.0f, 200.0f, 40.0f, 3));
+    objects.emplace_back(std::make_unique<Wall>(300.0f, 100.0f, 200.0f, 40.0f, 3));
 }
 
 // The main game loop - called once from main() and runs until window closes.
 void Game::run()
 {
-    // Restart the clock so the first frame's dt isn't huge.
     clock.restart();
-
     while (window.isOpen())
     {
-        // --- 1. Measure time elapsed since last frame ---
-        // clock.restart() returns elapsed time AND resets the clock to 0.
-        // asSeconds() gives a float like 0.0166 for ~60fps.
         float dt = clock.restart().asSeconds();
-
-        // --- 2. The three steps of every frame ---
-        processEvents();   // Read input
-        update(dt);        // Update game logic
-        render();          // Draw everything
+        processEvents();
+        update(dt);
+        render();
     }
 }
 
@@ -54,19 +64,28 @@ void Game::processEvents()
 // Update every object in the game by dt seconds.
 void Game::update(float dt)
 {
-    // Range-based for loop over the polymorphic vector.
-    // "auto&" means "let the compiler deduce the type, give me a reference"
-    // (so we don't COPY the unique_ptr, which would be illegal anyway).
-    for (auto& obj : objects)
+    // --- 1. Update all objects ---
+    // We loop with an index because the vector may grow mid-iteration
+    // (e.g. PlayerTank::update may push a new Bullet into it).
+    // Using a range-based for-loop here would invalidate iterators.
+    size_t initialSize = objects.size();
+    for (size_t i = 0; i < initialSize; ++i)
     {
-        // obj is unique_ptr<GameObject>; obj->update(dt) calls the right
-        // version automatically thanks to the "virtual" keyword.
-        // This is the POLYMORPHISM in action!
-        obj->update(dt);
+        objects[i]->update(dt, objects);
     }
 
-    // (Later: remove inactive objects here)
+    // --- 2. Remove inactive objects (the std::erase-remove idiom) ---
+    // std::remove_if shifts all "to-keep" elements to the front and returns
+    // an iterator to the new end. erase() then chops off the leftover tail.
+    objects.erase(
+        std::remove_if(objects.begin(), objects.end(),
+            [](const std::unique_ptr<GameObject>& obj) {
+                return !obj->isActive();
+            }),
+        objects.end()
+    );
 }
+
 
 // Draw every object to the window.
 void Game::render()
