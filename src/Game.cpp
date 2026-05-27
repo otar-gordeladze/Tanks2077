@@ -4,7 +4,7 @@
 #include "Game.h"
 #include <algorithm>   // for std::remove_if
 #include "Wall.h"
-
+#include "Bullet.h"
 
 
 
@@ -64,19 +64,17 @@ void Game::processEvents()
 // Update every object in the game by dt seconds.
 void Game::update(float dt)
 {
-    // --- 1. Update all objects ---
-    // We loop with an index because the vector may grow mid-iteration
-    // (e.g. PlayerTank::update may push a new Bullet into it).
-    // Using a range-based for-loop here would invalidate iterators.
+    // 1. Update all objects
     size_t initialSize = objects.size();
     for (size_t i = 0; i < initialSize; ++i)
     {
         objects[i]->update(dt, objects);
     }
 
-    // --- 2. Remove inactive objects (the std::erase-remove idiom) ---
-    // std::remove_if shifts all "to-keep" elements to the front and returns
-    // an iterator to the new end. erase() then chops off the leftover tail.
+    // 2. Detect & resolve collisions (bullets vs walls)
+    handleCollisions();
+
+    // 3. Remove inactive objects
     objects.erase(
         std::remove_if(objects.begin(), objects.end(),
             [](const std::unique_ptr<GameObject>& obj) {
@@ -101,4 +99,31 @@ void Game::render()
 
     // Step 3: show the new frame on screen (swap buffers).
     window.display();
+}
+
+void Game::handleCollisions()
+{
+    // For every bullet, check every wall.
+    for (auto& obj1 : objects)
+    {
+        // Try to interpret obj1 as a Bullet
+        Bullet* bullet = dynamic_cast<Bullet*>(obj1.get());
+        if (bullet == nullptr || !bullet->isActive()) continue;
+
+        for (auto& obj2 : objects)
+        {
+            // Try to interpret obj2 as a Wall
+            Wall* wall = dynamic_cast<Wall*>(obj2.get());
+            if (wall == nullptr || !wall->isActive()) continue;
+
+            // SFML 3.x intersection check
+            if (bullet->getBounds().findIntersection(wall->getBounds()).has_value())
+            {
+                // Bullet hits wall: damage the wall, kill the bullet
+                wall->takeDamage(bullet->getDamage());
+                bullet->setActive(false);
+                break;   // this bullet is done; move to the next one
+            }
+        }
+    }
 }

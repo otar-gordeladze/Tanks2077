@@ -16,7 +16,12 @@ private:
 
     // SFML clock - measures time between frames for frame-independent movement.
     sf::Clock clock;
-
+    
+    
+    // Detect collisions between bullets and walls; mark them inactive accordingly.
+    void handleCollisions();
+    
+    
     // THE polymorphic container required by the assignment.
     // It holds unique_ptr to GameObject - the BASE class - so it can store
     // ANY subclass (Tank, Wall, Bullet, Bonus...) all together.

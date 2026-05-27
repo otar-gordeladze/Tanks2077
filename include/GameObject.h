@@ -42,6 +42,7 @@ public:
     virtual sf::FloatRect getBounds() const = 0;
 
     // Helpers any subclass can use:
+    void setActive(bool a) { active = a; }
     bool isActive() const { return active; }
     sf::Vector2f getPosition() const { return position; }
 };
