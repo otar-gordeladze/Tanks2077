@@ -12,12 +12,16 @@ static const float SHOOT_INTERVAL = 0.3f;
 
 PlayerTank::PlayerTank(float x, float y)
     : Tank(x, y, sf::Color(80, 200, 80), 3, 200.0f),
-      shootCooldown(0.0f)
+      shootCooldown(0.0f),
+      damageInvulnerability(0.0f)
 {
 }
 
 void PlayerTank::update(float dt, std::vector<std::unique_ptr<GameObject>>& objects)
 {
+    // Tick down damage invulnerability
+    if (damageInvulnerability > 0.0f)
+        damageInvulnerability -= dt;
     // --- 1. Read input ---
     float dx = 0.0f, dy = 0.0f;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) ||
@@ -69,6 +73,11 @@ void PlayerTank::update(float dt, std::vector<std::unique_ptr<GameObject>>& obje
         objects.emplace_back(std::make_unique<Bullet>(spawnX, spawnY, direction, 1));
         shootCooldown = 0.3f;
     }
+    // Visual feedback for invulnerability: flicker the tank.
+    if (damageInvulnerability > 0.0f)
+        shape.setFillColor(sf::Color(80, 200, 80, 100));  // semi-transparent
+    else
+        shape.setFillColor(sf::Color(80, 200, 80, 255));  // solid
 }
 
 // Check if moving to (testX, testY) would collide with any Wall in the vector.
@@ -98,4 +107,14 @@ bool PlayerTank::collidesWithWall(float testX, float testY,
     }
 
     return false;
+}
+
+bool PlayerTank::tryDamage(int amount)
+{
+    if (damageInvulnerability > 0.0f)
+        return false;   // currently invulnerable - no damage
+
+    takeDamage(amount);                  // inherited from Tank
+    damageInvulnerability = 1.0f;        // 1 second of invulnerability
+    return true;
 }

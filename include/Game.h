@@ -11,6 +11,13 @@
 class Game
 {
 private:
+    // Time between random enemy spawns (in seconds).
+    float enemySpawnInterval;
+
+    // Time remaining until next enemy spawn.
+    float enemySpawnTimer;
+
+
     // The SFML window the game is drawn into.
     sf::RenderWindow window;
 
@@ -39,6 +46,9 @@ private:
 
     // Draw every object to the window.
     void render();
+
+    // Spawn a random enemy type at a random edge of the map.
+    void spawnRandomEnemy();
 
 public:
     // Constructor - creates the window and sets up initial state.

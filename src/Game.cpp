@@ -5,8 +5,11 @@
 #include <algorithm>   // for std::remove_if
 #include "Wall.h"
 #include "Bullet.h"
-
-
+#include "EnemyTypes.h"
+#include <cstdlib>     // for srand
+#include <ctime>       // for time
+#include "EnemyTank.h"
+#include "PlayerTank.h"
 
 
 // Constructor:
@@ -14,8 +17,13 @@
 // This is more efficient than assigning in the body because it constructs
 // the window once with final values, instead of default-constructing then assigning.
 Game::Game()
-    : window(sf::VideoMode(sf::Vector2u(800, 600)), "Tanks 2077")
+    : window(sf::VideoMode(sf::Vector2u(800, 600)), "Tanks 2077"),
+    enemySpawnInterval(2.5f),
+    enemySpawnTimer(2.5f)
 {
+    // Seed random number generator using current time.
+    // This is your "Introduction of randomness" rubric item.
+    std::srand(static_cast<unsigned int>(std::time(nullptr)));
     
     // Limit the framerate to 60 FPS - prevents the game from running too fast
     // on powerful machines and reduces unnecessary CPU usage.
@@ -33,6 +41,32 @@ Game::Game()
     objects.emplace_back(std::make_unique<Wall>(600.0f, 200.0f, 40.0f, 200.0f, 3));
     objects.emplace_back(std::make_unique<Wall>(300.0f, 450.0f, 200.0f, 40.0f, 3));
     objects.emplace_back(std::make_unique<Wall>(300.0f, 100.0f, 200.0f, 40.0f, 3));
+    
+}
+
+void Game::spawnRandomEnemy()
+{
+    // Pick a random spawn point along one of the four window edges.
+    // Edge 0 = top, 1 = right, 2 = bottom, 3 = left.
+    int edge = std::rand() % 4;
+    float x = 0.0f, y = 0.0f;
+    switch (edge)
+    {
+        case 0: x = static_cast<float>(std::rand() % 760 + 20); y = 30.0f;  break;
+        case 1: x = 770.0f; y = static_cast<float>(std::rand() % 560 + 20); break;
+        case 2: x = static_cast<float>(std::rand() % 760 + 20); y = 570.0f; break;
+        case 3: x = 30.0f;  y = static_cast<float>(std::rand() % 560 + 20); break;
+    }
+
+    // Pick a random enemy type. We use weighted probabilities:
+    //   50% Normal, 30% Fast, 20% Heavy.
+    int roll = std::rand() % 10;
+    if (roll < 5)
+        objects.emplace_back(std::make_unique<NormalEnemy>(x, y));
+    else if (roll < 8)
+        objects.emplace_back(std::make_unique<FastEnemy>(x, y));
+    else
+        objects.emplace_back(std::make_unique<HeavyEnemy>(x, y));
 }
 
 // The main game loop - called once from main() and runs until window closes.
@@ -71,6 +105,14 @@ void Game::update(float dt)
         objects[i]->update(dt, objects);
     }
 
+    // --- Spawn enemies over time ---
+    enemySpawnTimer -= dt;
+    if (enemySpawnTimer <= 0.0f)
+    {
+        spawnRandomEnemy();
+        enemySpawnTimer = enemySpawnInterval;
+    }
+
     // 2. Detect & resolve collisions (bullets vs walls)
     handleCollisions();
 
@@ -103,27 +145,70 @@ void Game::render()
 
 void Game::handleCollisions()
 {
-    // For every bullet, check every wall.
+    // --- 1. Find the player (if still alive) ---
+    // We only have one player, so a single pass is fine.
+    PlayerTank* player = nullptr;
+    for (auto& obj : objects)
+    {
+        player = dynamic_cast<PlayerTank*>(obj.get());
+        if (player != nullptr) break;
+    }
+
+    // --- 2. For each bullet, check what it hits ---
     for (auto& obj1 : objects)
     {
-        // Try to interpret obj1 as a Bullet
         Bullet* bullet = dynamic_cast<Bullet*>(obj1.get());
         if (bullet == nullptr || !bullet->isActive()) continue;
 
         for (auto& obj2 : objects)
         {
-            // Try to interpret obj2 as a Wall
-            Wall* wall = dynamic_cast<Wall*>(obj2.get());
-            if (wall == nullptr || !wall->isActive()) continue;
+            if (!obj2->isActive()) continue;
+            if (obj2.get() == bullet) continue;     // a bullet doesn't hit itself
 
-            // SFML 3.x intersection check
-            if (bullet->getBounds().findIntersection(wall->getBounds()).has_value())
+            // Bullet vs Wall
+            if (Wall* wall = dynamic_cast<Wall*>(obj2.get()))
             {
-                // Bullet hits wall: damage the wall, kill the bullet
-                wall->takeDamage(bullet->getDamage());
-                bullet->setActive(false);
-                break;   // this bullet is done; move to the next one
+                if (bullet->getBounds().findIntersection(wall->getBounds()).has_value())
+                {
+                    wall->takeDamage(bullet->getDamage());
+                    bullet->setActive(false);
+                    break;
+                }
+            }
+            // Bullet vs Enemy
+            else if (EnemyTank* enemy = dynamic_cast<EnemyTank*>(obj2.get()))
+            {
+                if (bullet->getBounds().findIntersection(enemy->getBounds()).has_value())
+                {
+                    enemy->takeDamage(bullet->getDamage());   // inherited from Tank
+                    bullet->setActive(false);
+                    break;
+                }
             }
         }
+    }
+
+    // --- 3. Enemy touches Player ---
+    if (player != nullptr && player->isActive())
+    {
+        for (auto& obj : objects)
+        {
+            EnemyTank* enemy = dynamic_cast<EnemyTank*>(obj.get());
+            if (enemy == nullptr || !enemy->isActive()) continue;
+
+            if (player->getBounds().findIntersection(enemy->getBounds()).has_value())
+            {
+                player->tryDamage(1);   // protected by the invulnerability timer
+                // We DON'T break - other enemies could also be touching, but
+                // the invulnerability means only one will register damage.
+            }
+        }
+    }
+
+    // --- 4. Close the window if player is dead ---
+    // (Temporary - we'll add a proper game-over screen in Phase 7.)
+    if (player == nullptr || !player->isActive())
+    {
+        window.close();
     }
 }
