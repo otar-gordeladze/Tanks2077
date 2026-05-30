@@ -7,17 +7,12 @@
 #include <memory>     // for std::unique_ptr
 #include <vector>     // for std::vector
 #include "GameObject.h"
+#include <SFML/Graphics.hpp>
+#include <optional>
 
 class Game
 {
 private:
-    // Time between random enemy spawns (in seconds).
-    float enemySpawnInterval;
-
-    // Time remaining until next enemy spawn.
-    float enemySpawnTimer;
-
-
     // The SFML window the game is drawn into.
     sf::RenderWindow window;
 
@@ -25,9 +20,27 @@ private:
     sf::Clock clock;
     
     
+
+    // Font used by all text in the HUD.
+    sf::Font font;
+
+    // HUD text objects (created once, updated each frame).
+    // We use std::optional because sf::Text requires a font in its constructor,
+    // and we can't construct it in the initializer list cleanly.
+    std::optional<sf::Text> scoreText;
+    std::optional<sf::Text> hpText;
+    // Player's current score.
+    
+
     // Detect collisions between bullets and walls; mark them inactive accordingly.
     void handleCollisions();
-    
+    // Time between random enemy spawns (in seconds).
+    float enemySpawnInterval;
+
+    // Time remaining until next enemy spawn.
+    float enemySpawnTimer;
+
+    int score;
     
     // THE polymorphic container required by the assignment.
     // It holds unique_ptr to GameObject - the BASE class - so it can store
@@ -46,6 +59,8 @@ private:
 
     // Draw every object to the window.
     void render();
+
+    void drawHUD();
 
     // Spawn a random enemy type at a random edge of the map.
     void spawnRandomEnemy();

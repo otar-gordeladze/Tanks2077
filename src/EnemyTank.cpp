@@ -6,11 +6,13 @@
 #include <cstdlib>     // for std::rand
 #include <ctime>       // for time-based RNG seeding
 
-EnemyTank::EnemyTank(float x, float y, sf::Color color, int hp, float speed, float changeInterval)
+EnemyTank::EnemyTank(float x, float y, sf::Color color, int hp, float speed,
+                     float changeInterval, int scoreValue)
     : Tank(x, y, color, hp, speed),
       direction(0.0f, 0.0f),
       directionChangeInterval(changeInterval),
-      directionChangeTimer(changeInterval)
+      directionChangeTimer(changeInterval),
+      scoreValue(scoreValue)
 {
     pickRandomDirection();
 }

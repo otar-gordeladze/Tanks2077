@@ -20,13 +20,20 @@ protected:
     // Pick a random direction (one of 8 cardinal/diagonal directions).
     void pickRandomDirection();
 
+    // Score awarded to the player when this enemy is destroyed.
+    int scoreValue;
+
 public:
     // Constructor: position, color, hp, speed, and AI direction-change rate.
-    EnemyTank(float x, float y, sf::Color color, int hp, float speed, float changeInterval);
-
+    EnemyTank(float x, float y, sf::Color color, int hp, float speed,
+          float changeInterval, int scoreValue);
+    
+    int getScoreValue() const { return scoreValue; }
+    
     // Concrete implementation of update - shared by all enemies.
     // Moves the tank, handles wall collisions, occasionally changes direction.
     void update(float dt, std::vector<std::unique_ptr<GameObject>>& objects) override;
 
+    
     // We DON'T need to override draw() or getBounds() — they're inherited from Tank.
 };

@@ -10,6 +10,7 @@
 #include <ctime>       // for time
 #include "EnemyTank.h"
 #include "PlayerTank.h"
+#include <string>     // for std::to_string
 
 
 // Constructor:
@@ -19,7 +20,8 @@
 Game::Game()
     : window(sf::VideoMode(sf::Vector2u(800, 600)), "Tanks 2077"),
     enemySpawnInterval(2.5f),
-    enemySpawnTimer(2.5f)
+    enemySpawnTimer(2.5f),
+    score(0)
 {
     // Seed random number generator using current time.
     // This is your "Introduction of randomness" rubric item.
@@ -41,7 +43,24 @@ Game::Game()
     objects.emplace_back(std::make_unique<Wall>(600.0f, 200.0f, 40.0f, 200.0f, 3));
     objects.emplace_back(std::make_unique<Wall>(300.0f, 450.0f, 200.0f, 40.0f, 3));
     objects.emplace_back(std::make_unique<Wall>(300.0f, 100.0f, 200.0f, 40.0f, 3));
-    
+    // Load the font for the HUD. Arial is always available on Windows.
+    if (!font.openFromFile("C:/Windows/Fonts/arial.ttf"))
+    {
+        // If font loading fails, we'll just have no text - not fatal.
+        // (In a real product we'd log an error here.)
+    }
+    else
+    {
+        // Create the score and HP text objects now that the font is ready.
+        // SFML 3.x: sf::Text requires a font reference in its constructor.
+        scoreText.emplace(font, "Score: 0", 24);
+        scoreText->setFillColor(sf::Color::White);
+        scoreText->setPosition(sf::Vector2f(10.0f, 10.0f));
+
+        hpText.emplace(font, "HP: 3", 24);
+        hpText->setFillColor(sf::Color(80, 200, 80));
+        hpText->setPosition(sf::Vector2f(10.0f, 40.0f));
+    }
 }
 
 void Game::spawnRandomEnemy()
@@ -138,7 +157,7 @@ void Game::render()
     {
         obj->draw(window);
     }
-
+    drawHUD();
     // Step 3: show the new frame on screen (swap buffers).
     window.display();
 }
@@ -176,12 +195,18 @@ void Game::handleCollisions()
                 }
             }
             // Bullet vs Enemy
+            // Bullet vs Enemy
             else if (EnemyTank* enemy = dynamic_cast<EnemyTank*>(obj2.get()))
             {
                 if (bullet->getBounds().findIntersection(enemy->getBounds()).has_value())
                 {
-                    enemy->takeDamage(bullet->getDamage());   // inherited from Tank
+                    enemy->takeDamage(bullet->getDamage());
                     bullet->setActive(false);
+
+                    // If the hit killed the enemy, award score.
+                    if (!enemy->isActive())
+                        score += enemy->getScoreValue();
+
                     break;
                 }
             }
@@ -210,5 +235,32 @@ void Game::handleCollisions()
     if (player == nullptr || !player->isActive())
     {
         window.close();
+    }
+}
+
+void Game::drawHUD()
+{
+    // Find the player (so we can read their HP).
+    int playerHP = 0;
+    for (auto& obj : objects)
+    {
+        if (PlayerTank* p = dynamic_cast<PlayerTank*>(obj.get()))
+        {
+            playerHP = p->getHP();      // inherited from Tank
+            break;
+        }
+    }
+
+    // Update text contents and draw, if font loaded successfully.
+    if (scoreText.has_value())
+    {
+        scoreText->setString("Score: " + std::to_string(score));
+        window.draw(*scoreText);
+    }
+
+    if (hpText.has_value())
+    {
+        hpText->setString("HP: " + std::to_string(playerHP));
+        window.draw(*hpText);
     }
 }

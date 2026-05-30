@@ -17,6 +17,7 @@ private:
     float damageInvulnerability;
 
 public:
+    
     // Constructor: just position. Color, hp, speed are decided by PlayerTank itself.
     PlayerTank(float x, float y);
     
