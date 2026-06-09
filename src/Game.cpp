@@ -13,7 +13,7 @@
 #include <string>     // for std::to_string
 #include "BonusTypes.h"
 #include "Bonus.h"
-
+#include "Config.h"
 
 
 // Constructor:
@@ -22,11 +22,13 @@
 // the window once with final values, instead of default-constructing then assigning.
 Game::Game()
     : window(sf::VideoMode(sf::Vector2u(800, 600)), "Tanks 2077"),
-    enemySpawnInterval(2.5f),
-    enemySpawnTimer(2.5f),
-    bonusSpawnInterval(8.0f),
-    bonusSpawnTimer(8.0f),
-    score(0)
+    enemySpawnInterval(Config::get().getFloat("enemy_spawn_interval", 2.5f)),
+    enemySpawnTimer(Config::get().getFloat("enemy_spawn_interval", 2.5f)),
+    score(0),
+    bonusSpawnInterval(Config::get().getFloat("bonus_spawn_interval", 8.0f)),
+    bonusSpawnTimer(Config::get().getFloat("bonus_spawn_interval", 8.0f))
+
+
 {
     // Seed random number generator using current time.
     // This is your "Introduction of randomness" rubric item.

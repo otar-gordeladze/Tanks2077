@@ -31,9 +31,7 @@ private:
     std::optional<sf::Text> hpText;
     // Player's current score.
     
-    // Bonus spawning timers.
-    float bonusSpawnInterval;
-    float bonusSpawnTimer;
+    
 
     // Spawn a random bonus type at a random position on the map.
     void spawnRandomBonus();
@@ -47,6 +45,10 @@ private:
     float enemySpawnTimer;
 
     int score;
+
+    // Bonus spawning timers.
+    float bonusSpawnInterval;
+    float bonusSpawnTimer;
     
     // THE polymorphic container required by the assignment.
     // It holds unique_ptr to GameObject - the BASE class - so it can store

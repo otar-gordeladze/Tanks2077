@@ -8,10 +8,7 @@
 class PlayerTank : public Tank
 {
 private:
-    // Active buff timers. When > 0, the buff is active. They tick down each frame.
-    float shieldTimer;          // invulnerability
-    float fastShootTimer;       // halved shoot cooldown
-    float fastMovementTimer;    // +50% speed
+    
 
 
     // Time remaining until the player can fire again. Counts down each frame.
@@ -21,6 +18,11 @@ private:
     float shootCooldown;
     // Brief invulnerability after taking damage. Counts down each frame.
     float damageInvulnerability;
+
+    // Active buff timers. When > 0, the buff is active. They tick down each frame.
+    float shieldTimer;          // invulnerability
+    float fastShootTimer;       // halved shoot cooldown
+    float fastMovementTimer;    // +50% speed
 
 public:
     // Bonus effects call these.

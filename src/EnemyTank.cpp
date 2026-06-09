@@ -6,9 +6,9 @@
 #include <cstdlib>     // for std::rand
 #include <ctime>       // for time-based RNG seeding
 
-EnemyTank::EnemyTank(float x, float y, sf::Color color, int hp, float speed,
+EnemyTank::EnemyTank(float x, float y, int hp, float speed,
                      float changeInterval, int scoreValue)
-    : Tank(x, y, color, hp, speed),
+    : Tank(x, y, hp, speed),
       direction(0.0f, 0.0f),
       directionChangeInterval(changeInterval),
       directionChangeTimer(changeInterval),
@@ -88,6 +88,9 @@ void EnemyTank::update(float dt, std::vector<std::unique_ptr<GameObject>>& objec
     rotation = std::atan2(direction.y, direction.x) * 180.0f / 3.14159265f;
 
     // --- 4. Sync the visual shape ---
-    shape.setPosition(position);
-    shape.setRotation(sf::degrees(rotation));
+    if (sprite.has_value())
+    {
+        sprite->setPosition(position);
+        sprite->setRotation(sf::degrees(rotation));
+    }
 }

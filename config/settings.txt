@@ -1,0 +1,23 @@
+# Tanks 2077 - game settings
+# Lines starting with # are comments.
+# Format: key = value (whitespace around = is ignored)
+
+# --- Player settings ---
+player_speed = 200
+player_hp = 3
+shoot_cooldown = 0.3
+
+# --- Bullet settings ---
+bullet_speed = 500
+bullet_damage = 1
+
+# --- Enemy settings ---
+enemy_spawn_interval = 2.5
+
+# --- Bonus settings ---
+bonus_spawn_interval = 8.0
+shield_duration = 5.0
+fast_shoot_duration = 10.0
+fast_shoot_cooldown = 0.12
+fast_movement_duration = 10.0
+fast_movement_multiplier = 1.5

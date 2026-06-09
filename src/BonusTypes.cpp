@@ -1,8 +1,11 @@
 // BonusTypes.cpp - implementation of the three bonus pickups.
 // Each one calls a different player method via apply().
-
 #include "BonusTypes.h"
 #include "PlayerTank.h"   // we DO need the full definition here, since we call methods on PlayerTank
+#include "Config.h"
+
+
+
 
 // --- ShieldBonus ---
 // Cyan square. Grants 5 seconds of invulnerability.
@@ -13,7 +16,7 @@ ShieldBonus::ShieldBonus(float x, float y)
 
 void ShieldBonus::apply(PlayerTank& player)
 {
-    player.grantShield(5.0f);
+    player.grantShield(Config::get().getFloat("shield_duration", 5.0f));
 }
 
 // --- FastShootBonus ---
@@ -25,7 +28,7 @@ FastShootBonus::FastShootBonus(float x, float y)
 
 void FastShootBonus::apply(PlayerTank& player)
 {
-    player.grantFastShoot(10.0f);
+    player.grantFastShoot(Config::get().getFloat("fast_shoot_duration", 10.0f));
 }
 
 // --- FastMovementBonus ---
@@ -37,5 +40,5 @@ FastMovementBonus::FastMovementBonus(float x, float y)
 
 void FastMovementBonus::apply(PlayerTank& player)
 {
-    player.grantFastMovement(10.0f);
+    player.grantFastMovement(Config::get().getFloat("fast_movement_duration", 10.0f));
 }
