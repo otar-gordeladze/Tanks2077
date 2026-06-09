@@ -11,6 +11,9 @@
 #include "EnemyTank.h"
 #include "PlayerTank.h"
 #include <string>     // for std::to_string
+#include "BonusTypes.h"
+#include "Bonus.h"
+
 
 
 // Constructor:
@@ -21,6 +24,8 @@ Game::Game()
     : window(sf::VideoMode(sf::Vector2u(800, 600)), "Tanks 2077"),
     enemySpawnInterval(2.5f),
     enemySpawnTimer(2.5f),
+    bonusSpawnInterval(8.0f),
+    bonusSpawnTimer(8.0f),
     score(0)
 {
     // Seed random number generator using current time.
@@ -132,6 +137,13 @@ void Game::update(float dt)
         enemySpawnTimer = enemySpawnInterval;
     }
 
+    // --- Spawn bonuses over time ---
+    bonusSpawnTimer -= dt;
+    if (bonusSpawnTimer <= 0.0f)
+    {
+        spawnRandomBonus();
+        bonusSpawnTimer = bonusSpawnInterval;
+    }
     // 2. Detect & resolve collisions (bullets vs walls)
     handleCollisions();
 
@@ -228,6 +240,21 @@ void Game::handleCollisions()
                 // the invulnerability means only one will register damage.
             }
         }
+        // --- 4. Player picks up Bonus ---
+    if (player != nullptr && player->isActive())
+    {
+        for (auto& obj : objects)
+        {
+            Bonus* bonus = dynamic_cast<Bonus*>(obj.get());
+            if (bonus == nullptr || !bonus->isActive()) continue;
+
+            if (player->getBounds().findIntersection(bonus->getBounds()).has_value())
+            {
+                bonus->apply(*player);     // POLYMORPHIC CALL !!!
+                bonus->setActive(false);    // bonus disappears after pickup
+            }
+        }
+    }
     }
 
     // --- 4. Close the window if player is dead ---
@@ -262,5 +289,22 @@ void Game::drawHUD()
     {
         hpText->setString("HP: " + std::to_string(playerHP));
         window.draw(*hpText);
+    }
+}
+
+
+void Game::spawnRandomBonus()
+{
+    // Random position in the playable area (avoiding edges).
+    float x = static_cast<float>(std::rand() % 700 + 50);
+    float y = static_cast<float>(std::rand() % 500 + 50);
+
+    // Pick one of three bonus types with equal probability.
+    int type = std::rand() % 3;
+    switch (type)
+    {
+        case 0: objects.emplace_back(std::make_unique<ShieldBonus>(x, y));        break;
+        case 1: objects.emplace_back(std::make_unique<FastShootBonus>(x, y));     break;
+        case 2: objects.emplace_back(std::make_unique<FastMovementBonus>(x, y));  break;
     }
 }

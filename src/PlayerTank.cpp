@@ -13,7 +13,10 @@ static const float SHOOT_INTERVAL = 0.3f;
 PlayerTank::PlayerTank(float x, float y)
     : Tank(x, y, sf::Color(80, 200, 80), 3, 200.0f),
       shootCooldown(0.0f),
-      damageInvulnerability(0.0f)
+      damageInvulnerability(0.0f),
+      shieldTimer(0.0f),
+      fastShootTimer(0.0f),
+      fastMovementTimer(0.0f)
 {
 }
 
@@ -22,6 +25,12 @@ void PlayerTank::update(float dt, std::vector<std::unique_ptr<GameObject>>& obje
     // Tick down damage invulnerability
     if (damageInvulnerability > 0.0f)
         damageInvulnerability -= dt;
+
+    // Tick down buff timers
+    if (shieldTimer > 0.0f)        shieldTimer -= dt;
+    if (fastShootTimer > 0.0f)     fastShootTimer -= dt;
+    if (fastMovementTimer > 0.0f)  fastMovementTimer -= dt;
+
     // --- 1. Read input ---
     float dx = 0.0f, dy = 0.0f;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) ||
@@ -39,17 +48,16 @@ void PlayerTank::update(float dt, std::vector<std::unique_ptr<GameObject>>& obje
         dx /= length;
         dy /= length;
 
-        // --- 2. Try the move, checking collision on each axis separately ---
-        // "Axis-separated" movement = if X is blocked, you can still slide along Y
-        // (and vice versa). This avoids the tank getting "stuck" in corners.
+        // Apply movement speed buff if active.
+        float effectiveSpeed = (fastMovementTimer > 0.0f) ? speed * 1.5f : speed;
 
         // Try X movement first
-        float newX = position.x + dx * speed * dt;
+        float newX = position.x + dx * effectiveSpeed * dt;
         if (!collidesWithWall(newX, position.y, objects))
             position.x = newX;
 
         // Then Y movement
-        float newY = position.y + dy * speed * dt;
+        float newY = position.y + dy * effectiveSpeed * dt;
         if (!collidesWithWall(position.x, newY, objects))
             position.y = newY;
 
@@ -71,13 +79,15 @@ void PlayerTank::update(float dt, std::vector<std::unique_ptr<GameObject>>& obje
         float spawnX = position.x + direction.x * 25.0f;
         float spawnY = position.y + direction.y * 25.0f;
         objects.emplace_back(std::make_unique<Bullet>(spawnX, spawnY, direction, 1));
-        shootCooldown = 0.3f;
+        shootCooldown = (fastShootTimer > 0.0f) ? 0.12f : 0.3f;
     }
-    // Visual feedback for invulnerability: flicker the tank.
-    if (damageInvulnerability > 0.0f)
-        shape.setFillColor(sf::Color(80, 200, 80, 100));  // semi-transparent
+    // Visual feedback for active buffs / damage state.
+    if (shieldTimer > 0.0f)
+        shape.setFillColor(sf::Color(80, 180, 255, 255));   // blue tint = shield
+    else if (damageInvulnerability > 0.0f)
+        shape.setFillColor(sf::Color(80, 200, 80, 100));    // semi-transparent
     else
-        shape.setFillColor(sf::Color(80, 200, 80, 255));  // solid
+        shape.setFillColor(sf::Color(80, 200, 80, 255));    // normal green
 }
 
 // Check if moving to (testX, testY) would collide with any Wall in the vector.
@@ -111,10 +121,18 @@ bool PlayerTank::collidesWithWall(float testX, float testY,
 
 bool PlayerTank::tryDamage(int amount)
 {
-    if (damageInvulnerability > 0.0f)
-        return false;   // currently invulnerable - no damage
+    // Shield blocks damage entirely.
+    if (shieldTimer > 0.0f)
+        return false;
 
-    takeDamage(amount);                  // inherited from Tank
-    damageInvulnerability = 1.0f;        // 1 second of invulnerability
+    if (damageInvulnerability > 0.0f)
+        return false;
+
+    takeDamage(amount);
+    damageInvulnerability = 1.0f;
     return true;
 }
+
+void PlayerTank::grantShield(float duration)        { shieldTimer = duration; }
+void PlayerTank::grantFastShoot(float duration)     { fastShootTimer = duration; }
+void PlayerTank::grantFastMovement(float duration)  { fastMovementTimer = duration; }

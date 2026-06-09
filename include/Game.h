@@ -31,6 +31,12 @@ private:
     std::optional<sf::Text> hpText;
     // Player's current score.
     
+    // Bonus spawning timers.
+    float bonusSpawnInterval;
+    float bonusSpawnTimer;
+
+    // Spawn a random bonus type at a random position on the map.
+    void spawnRandomBonus();
 
     // Detect collisions between bullets and walls; mark them inactive accordingly.
     void handleCollisions();

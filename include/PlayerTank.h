@@ -8,6 +8,12 @@
 class PlayerTank : public Tank
 {
 private:
+    // Active buff timers. When > 0, the buff is active. They tick down each frame.
+    float shieldTimer;          // invulnerability
+    float fastShootTimer;       // halved shoot cooldown
+    float fastMovementTimer;    // +50% speed
+
+
     // Time remaining until the player can fire again. Counts down each frame.
     // Returns true if a 40x40 box at (testX, testY) overlaps any Wall in objects.
     bool collidesWithWall(float testX, float testY,
@@ -17,7 +23,12 @@ private:
     float damageInvulnerability;
 
 public:
-    
+    // Bonus effects call these.
+    void grantShield(float duration);
+    void grantFastShoot(float duration);
+    void grantFastMovement(float duration);
+
+
     // Constructor: just position. Color, hp, speed are decided by PlayerTank itself.
     PlayerTank(float x, float y);
     
