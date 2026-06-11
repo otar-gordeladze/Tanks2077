@@ -14,7 +14,7 @@
 #include "BonusTypes.h"
 #include "Bonus.h"
 #include "Config.h"
-
+#include "Explosion.h"
 
 // Constructor:
 // Uses a member initializer list to construct the window directly.
@@ -217,9 +217,16 @@ void Game::handleCollisions()
                     enemy->takeDamage(bullet->getDamage());
                     bullet->setActive(false);
 
-                    // If the hit killed the enemy, award score.
+                    // If the hit killed the enemy, award score AND spawn an explosion
+                    // at the enemy's position. Note: we use the enemy's position,
+                    // not the bullet's, so the explosion is centered on what died.
                     if (!enemy->isActive())
+                    {
                         score += enemy->getScoreValue();
+                        sf::Vector2f enemyPos = enemy->getPosition();
+                        objects.emplace_back(
+                            std::make_unique<Explosion>(enemyPos.x, enemyPos.y));
+                    }
 
                     break;
                 }
