@@ -6,6 +6,7 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <string>
 #include <unordered_map>
 
@@ -19,6 +20,9 @@ private:
 
     // Private constructor - this is a singleton.
     AssetManager() = default;
+
+    // Map of sound-name -> loaded sound buffer.
+std::unordered_map<std::string, std::unique_ptr<sf::SoundBuffer>> soundBuffers;
 
 public:
     // Singletons cannot be copied or assigned.
@@ -39,4 +43,13 @@ public:
 
     // Check if a texture is loaded (useful for fallback logic).
     bool hasTexture(const std::string& name) const;
+
+    // Load a sound buffer from disk and store it under the given name.
+bool loadSound(const std::string& name, const std::string& path);
+
+// Get a reference to a previously-loaded sound buffer.
+sf::SoundBuffer& getSound(const std::string& name);
+
+// Check if a sound is loaded.
+bool hasSound(const std::string& name) const;
 };

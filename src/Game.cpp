@@ -15,6 +15,7 @@
 #include "Bonus.h"
 #include "Config.h"
 #include "Explosion.h"
+#include "SoundPlayer.h"
 
 
 
@@ -418,6 +419,7 @@ void Game::handleCollisions()
                         sf::Vector2f enemyPos = enemy->getPosition();
                         objects.emplace_back(
                             std::make_unique<Explosion>(enemyPos.x, enemyPos.y));
+                        SoundPlayer::get().play("explosion");
                     }
 
                     break;
@@ -439,6 +441,7 @@ void Game::handleCollisions()
             {
                 player->tryDamage(bullet->getDamage());
                 bullet->setActive(false);
+                SoundPlayer::get().play("pickup");
             }
         }
     }
@@ -610,7 +613,7 @@ void Game::spawnWallsLevel2()
 void Game::checkLevelProgression()
 {
     // Level 1 -> Level 2 at score 777.
-    if (currentLevel == 1 && score >= 777)
+    if (currentLevel == 1 && score >= 80)
     {
         loadLevel(2);
         // Show banner for 2 seconds.

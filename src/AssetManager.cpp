@@ -47,3 +47,33 @@ bool AssetManager::hasTexture(const std::string& name) const
 {
     return textures.find(name) != textures.end();
 }
+
+
+bool AssetManager::loadSound(const std::string& name, const std::string& path)
+{
+    if (soundBuffers.find(name) != soundBuffers.end())
+        return true;
+
+    auto buffer = std::make_unique<sf::SoundBuffer>();
+    if (!buffer->loadFromFile(path))
+    {
+        std::cerr << "AssetManager: failed to load sound: " << path << std::endl;
+        return false;
+    }
+
+    soundBuffers[name] = std::move(buffer);
+    return true;
+}
+
+sf::SoundBuffer& AssetManager::getSound(const std::string& name)
+{
+    auto it = soundBuffers.find(name);
+    if (it == soundBuffers.end())
+        throw std::runtime_error("AssetManager: sound not loaded: " + name);
+    return *(it->second);
+}
+
+bool AssetManager::hasSound(const std::string& name) const
+{
+    return soundBuffers.find(name) != soundBuffers.end();
+}

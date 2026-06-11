@@ -28,15 +28,21 @@ protected:
     float shootInterval;
 
     void initSprite(const std::string& textureName);
-
+    
     // Whether bullets fired by this tank damage the player (true) or enemies (false).
     bool isEnemyTank;
+
+    // Name of the sound to play when this tank shoots.
+    std::string shootSoundName;
+
+    // Factor applied to getBounds(): hitbox is shrunk by this proportion (1.0 = full sprite, 0.7 = 70%).
+    float hitboxScale;
 
 public:
     // Constructor now also takes the bullet texture name and base shoot interval.
     Tank(float x, float y, int hp, float speed,
-     const std::string& bulletTextureName, float shootInterval,
-     bool isEnemyTank);
+    const std::string& bulletTextureName, float shootInterval,
+    bool isEnemyTank, const std::string& shootSoundName);
 
     virtual ~Tank() = default;
 

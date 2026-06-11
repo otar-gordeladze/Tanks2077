@@ -9,7 +9,7 @@ EnemyTank::EnemyTank(float x, float y, int hp, float speed,
                      float changeInterval, int scoreValue,
                      const std::string& bulletTextureName,
                      float aiShootInterval)
-    : Tank(x, y, hp, speed, bulletTextureName, aiShootInterval, true),    // is enemy
+    : Tank(x, y, hp, speed, bulletTextureName, aiShootInterval, true, "shoot"),  // is enemy
       direction(0.0f, 0.0f),
       directionChangeInterval(changeInterval),
       directionChangeTimer(changeInterval),
@@ -52,8 +52,10 @@ void EnemyTank::update(float dt, std::vector<std::unique_ptr<GameObject>>& objec
     float newX = position.x + direction.x * speed * dt;
     float newY = position.y + direction.y * speed * dt;
 
-    sf::FloatRect testBounds(sf::Vector2f(newX - 20.0f, newY - 20.0f),
-                              sf::Vector2f(40.0f, 40.0f));
+    const float HALF = 50.0f * 0.7f / 2.0f;
+    const float SIZE = 50.0f * 0.7f;
+    sf::FloatRect testBounds(sf::Vector2f(newX - HALF, newY - HALF),
+                          sf::Vector2f(SIZE, SIZE));
 
     bool blocked = false;
     for (const auto& obj : objects)

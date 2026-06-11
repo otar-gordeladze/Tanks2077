@@ -4,10 +4,14 @@
 #include "AssetManager.h"
 #include "Bullet.h"
 #include <cmath>
+#include "SoundPlayer.h"
+
+
+
 
 Tank::Tank(float x, float y, int hp, float speed,
            const std::string& bulletTextureName, float shootInterval,
-           bool isEnemyTank)
+           bool isEnemyTank, const std::string& shootSoundName)
     : GameObject(x, y),
       hp(hp),
       speed(speed),
@@ -15,7 +19,9 @@ Tank::Tank(float x, float y, int hp, float speed,
       bulletTextureName(bulletTextureName),
       shootCooldown(0.0f),
       shootInterval(shootInterval),
-      isEnemyTank(isEnemyTank)
+      isEnemyTank(isEnemyTank),
+      shootSoundName(shootSoundName),
+      hitboxScale(0.7f)
 {
 }
 
@@ -42,9 +48,19 @@ void Tank::draw(sf::RenderWindow& window)
 
 sf::FloatRect Tank::getBounds() const
 {
-    if (sprite.has_value())
-        return sprite->getGlobalBounds();
-    return sf::FloatRect(position, sf::Vector2f(0, 0));
+    if (!sprite.has_value())
+        return sf::FloatRect(position, sf::Vector2f(0, 0));
+
+    sf::FloatRect full = sprite->getGlobalBounds();
+
+    // Shrink the box around its center by hitboxScale.
+    float newW = full.size.x * hitboxScale;
+    float newH = full.size.y * hitboxScale;
+    float dx = (full.size.x - newW) / 2.0f;
+    float dy = (full.size.y - newH) / 2.0f;
+
+    return sf::FloatRect(sf::Vector2f(full.position.x + dx, full.position.y + dy),
+                         sf::Vector2f(newW, newH));
 }
 
 void Tank::takeDamage(int amount)
@@ -76,4 +92,6 @@ void Tank::shoot(std::vector<std::unique_ptr<GameObject>>& objects)
 
     // Reset cooldown to interval (subclasses may override the interval later).
     shootCooldown = shootInterval;
+
+    SoundPlayer::get().play(shootSoundName);
 }

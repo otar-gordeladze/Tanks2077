@@ -4,6 +4,8 @@
 #include "Wall.h"
 #include "Config.h"
 #include <cmath>
+#include "SoundPlayer.h"
+
 
 PlayerTank::PlayerTank(float x, float y)
     : Tank(x, y,
@@ -11,7 +13,8 @@ PlayerTank::PlayerTank(float x, float y)
            Config::get().getFloat("player_speed", 200.0f),
            "player_bullet",
            Config::get().getFloat("shoot_cooldown", 0.3f),
-           false),     // not an enemy
+           false,            // not an enemy
+           "player_shoot"),  // play "player_shoot" sound when firing
       damageInvulnerability(0.0f),
       shieldTimer(0.0f),
       fastShootTimer(0.0f),
@@ -89,8 +92,10 @@ void PlayerTank::update(float dt, std::vector<std::unique_ptr<GameObject>>& obje
 bool PlayerTank::collidesWithWall(float testX, float testY,
                                    const std::vector<std::unique_ptr<GameObject>>& objects) const
 {
-    sf::FloatRect testBounds(sf::Vector2f(testX - 20.0f, testY - 20.0f),
-                              sf::Vector2f(40.0f, 40.0f));
+    const float HALF = 50.0f * 0.7f / 2.0f;     // half of hitbox (= 17.5px)
+    const float SIZE = 50.0f * 0.7f;             // hitbox size (= 35px)
+    sf::FloatRect testBounds(sf::Vector2f(testX - HALF, testY - HALF),
+                          sf::Vector2f(SIZE, SIZE));
 
     for (const auto& obj : objects)
     {
@@ -110,6 +115,7 @@ bool PlayerTank::tryDamage(int amount)
 
     takeDamage(amount);
     damageInvulnerability = 1.0f;
+    SoundPlayer::get().play("hit");
     return true;
 }
 

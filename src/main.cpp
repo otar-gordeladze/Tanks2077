@@ -4,6 +4,7 @@
 #include "Game.h"
 #include "Config.h"
 #include "AssetManager.h"
+#include "SoundPlayer.h"
 
 int main()
 {
@@ -28,6 +29,15 @@ int main()
     AssetManager::get().loadTexture("explosion_5", "assets/textures/explosion_5.png");
     AssetManager::get().loadTexture("explosion_6", "assets/textures/explosion_6.png");
 
+    // Load all sound effects.
+    AssetManager::get().loadSound("shoot",        "assets/sounds/shoot.wav");
+    AssetManager::get().loadSound("player_shoot", "assets/sounds/player_shoot.wav");
+    AssetManager::get().loadSound("explosion",    "assets/sounds/explosion.wav");
+    AssetManager::get().loadSound("pickup",       "assets/sounds/pickup.wav");
+    AssetManager::get().loadSound("hit",          "assets/sounds/hit.wav");
+    // Start background music (loops automatically).
+    SoundPlayer::get().playMusic("assets/sounds/music1.ogg");
+    
     // 3. Run the game.
     Game game;
     game.run();
