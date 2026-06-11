@@ -28,6 +28,12 @@ int main()
     AssetManager::get().loadTexture("explosion_4", "assets/textures/explosion_4.png");
     AssetManager::get().loadTexture("explosion_5", "assets/textures/explosion_5.png");
     AssetManager::get().loadTexture("explosion_6", "assets/textures/explosion_6.png");
+    AssetManager::get().loadTexture("background",          "assets/textures/background.png");
+    AssetManager::get().loadTexture("wall",                "assets/textures/wall.png");
+    AssetManager::get().loadTexture("bonus_shield",        "assets/textures/bonus_shield.png");
+    AssetManager::get().loadTexture("bonus_fast_shoot",    "assets/textures/bonus_fast_shoot.png");
+    AssetManager::get().loadTexture("bonus_fast_movement", "assets/textures/bonus_fast_movement.png");
+
 
     // Load all sound effects.
     AssetManager::get().loadSound("shoot",        "assets/sounds/shoot.wav");

@@ -16,6 +16,7 @@
 #include "Config.h"
 #include "Explosion.h"
 #include "SoundPlayer.h"
+#include "AssetManager.h"
 
 
 
@@ -24,7 +25,7 @@
 // This is more efficient than assigning in the body because it constructs
 // the window once with final values, instead of default-constructing then assigning.
 Game::Game()
-    : window(sf::VideoMode(sf::Vector2u(800, 600)), "Tanks 2077"),
+    : window(sf::VideoMode(sf::Vector2u(WINDOW_WIDTH, WINDOW_HEIGHT)), "Tanks 2077"),
     enemySpawnInterval(Config::get().getFloat("enemy_spawn_interval", 2.5f)),
     enemySpawnTimer(Config::get().getFloat("enemy_spawn_interval", 2.5f)),
     score(0),
@@ -77,59 +78,65 @@ Game::Game()
         // Center the text by accounting for its width.
         sf::FloatRect tb = titleText->getLocalBounds();
         titleText->setOrigin(sf::Vector2f(tb.size.x / 2.0f, tb.size.y / 2.0f));
-        titleText->setPosition(sf::Vector2f(400.0f, 220.0f));
+        titleText->setPosition(sf::Vector2f(WINDOW_WIDTH / 2.0f, 280.0f));
 
         menuPromptText.emplace(font, "Press ENTER to start    -    ESC to quit", 22);
         menuPromptText->setFillColor(sf::Color(200, 200, 200));
         sf::FloatRect mb = menuPromptText->getLocalBounds();
         menuPromptText->setOrigin(sf::Vector2f(mb.size.x / 2.0f, mb.size.y / 2.0f));
-        menuPromptText->setPosition(sf::Vector2f(400.0f, 360.0f));
+        menuPromptText->setPosition(sf::Vector2f(WINDOW_WIDTH / 2.0f, 440.0f));
 
         // --- Game over screen ---
         gameOverText.emplace(font, "GAME OVER", 64);
         gameOverText->setFillColor(sf::Color(255, 80, 100));
         sf::FloatRect gb = gameOverText->getLocalBounds();
         gameOverText->setOrigin(sf::Vector2f(gb.size.x / 2.0f, gb.size.y / 2.0f));
-        gameOverText->setPosition(sf::Vector2f(400.0f, 200.0f));
+        gameOverText->setPosition(sf::Vector2f(WINDOW_WIDTH / 2.0f, 260.0f));
 
         finalScoreText.emplace(font, "Final Score: 0", 32);
         finalScoreText->setFillColor(sf::Color::White);
-        finalScoreText->setPosition(sf::Vector2f(400.0f, 290.0f));    // origin set when shown
+        finalScoreText->setPosition(sf::Vector2f(WINDOW_WIDTH / 2.0f, 360.0f));    // origin set when shown
 
         restartPromptText.emplace(font, "ENTER to restart    -    ESC to quit", 22);
         restartPromptText->setFillColor(sf::Color(200, 200, 200));
         sf::FloatRect rb = restartPromptText->getLocalBounds();
         restartPromptText->setOrigin(sf::Vector2f(rb.size.x / 2.0f, rb.size.y / 2.0f));
-        restartPromptText->setPosition(sf::Vector2f(400.0f, 380.0f));
+        restartPromptText->setPosition(sf::Vector2f(WINDOW_WIDTH / 2.0f, 460.0f));
         // --- Scoreboard text (shown on Menu) ---
         scoreboardText.emplace(font, "HIGH SCORES", 22);
         scoreboardText->setFillColor(sf::Color(180, 180, 220));
-        scoreboardText->setPosition(sf::Vector2f(400.0f, 420.0f));    // origin set in renderMenu
+        scoreboardText->setPosition(sf::Vector2f(WINDOW_WIDTH / 2.0f, 520.0f));    // origin set in renderMenu
         // --- Level banner ---
         levelBannerText.emplace(font, "LEVEL 2", 64);
         levelBannerText->setFillColor(sf::Color(255, 220, 80));
         sf::FloatRect lb = levelBannerText->getLocalBounds();
         levelBannerText->setOrigin(sf::Vector2f(lb.size.x / 2.0f, lb.size.y / 2.0f));
-        levelBannerText->setPosition(sf::Vector2f(400.0f, 300.0f));
+        levelBannerText->setPosition(sf::Vector2f(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f));
+        
     }
+    // --- Background sprite ---
+        // Load the texture and scale it to fill the window.
+        sf::Texture& bgTex = AssetManager::get().getTexture("background");
+        backgroundSprite.emplace(bgTex);
+        sf::Vector2u bgSize = bgTex.getSize();
+        float scaleX = static_cast<float>(WINDOW_WIDTH)  / static_cast<float>(bgSize.x);
+        float scaleY = static_cast<float>(WINDOW_HEIGHT) / static_cast<float>(bgSize.y);
+        backgroundSprite->setScale(sf::Vector2f(scaleX, scaleY));
+        backgroundSprite->setPosition(sf::Vector2f(0.0f, 0.0f));
 }
 
 void Game::spawnRandomEnemy()
 {
-    // Pick a random spawn point along one of the four window edges.
-    // Edge 0 = top, 1 = right, 2 = bottom, 3 = left.
     int edge = std::rand() % 4;
     float x = 0.0f, y = 0.0f;
     switch (edge)
     {
-        case 0: x = static_cast<float>(std::rand() % 760 + 20); y = 30.0f;  break;
-        case 1: x = 770.0f; y = static_cast<float>(std::rand() % 560 + 20); break;
-        case 2: x = static_cast<float>(std::rand() % 760 + 20); y = 570.0f; break;
-        case 3: x = 30.0f;  y = static_cast<float>(std::rand() % 560 + 20); break;
+        case 0: x = static_cast<float>(std::rand() % (WINDOW_WIDTH - 40) + 20); y = 30.0f; break;
+        case 1: x = WINDOW_WIDTH - 30.0f; y = static_cast<float>(std::rand() % (WINDOW_HEIGHT - 40) + 20); break;
+        case 2: x = static_cast<float>(std::rand() % (WINDOW_WIDTH - 40) + 20); y = WINDOW_HEIGHT - 30.0f; break;
+        case 3: x = 30.0f; y = static_cast<float>(std::rand() % (WINDOW_HEIGHT - 40) + 20); break;
     }
 
-    // Pick a random enemy type. We use weighted probabilities:
-    //   50% Normal, 30% Fast, 20% Heavy.
     int roll = std::rand() % 10;
     if (roll < 5)
         objects.emplace_back(std::make_unique<NormalEnemy>(x, y));
@@ -263,6 +270,9 @@ void Game::render()
 {
     // Same dark background for all states.
     window.clear(sf::Color(30, 30, 40));
+    // Draw background under everything (in all states - menu, playing, game over).
+    if (backgroundSprite.has_value())
+        window.draw(*backgroundSprite);
 
     switch (state)
     {
@@ -288,7 +298,7 @@ void Game::render()
 
                 sf::FloatRect lb = levelBannerText->getLocalBounds();
                 levelBannerText->setOrigin(sf::Vector2f(lb.size.x / 2.0f, lb.size.y / 2.0f));
-                levelBannerText->setPosition(sf::Vector2f(400.0f, 300.0f));
+                levelBannerText->setPosition(sf::Vector2f(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f));
 
                 sf::Color c = sf::Color(255, 220, 80, static_cast<std::uint8_t>(alpha));
                 levelBannerText->setFillColor(c);
@@ -328,7 +338,7 @@ void Game::renderMenu()
         // Center horizontally each time (text may grow with new entries).
         sf::FloatRect b = scoreboardText->getLocalBounds();
         scoreboardText->setOrigin(sf::Vector2f(b.size.x / 2.0f, 0.0f));
-        scoreboardText->setPosition(sf::Vector2f(400.0f, 420.0f));
+        scoreboardText->setPosition(sf::Vector2f(WINDOW_WIDTH / 2.0f, 520.0f));
 
         window.draw(*scoreboardText);
     }
@@ -337,7 +347,7 @@ void Game::renderMenu()
 void Game::renderGameOver()
 {
     // Dim background.
-    sf::RectangleShape overlay(sf::Vector2f(800.0f, 600.0f));
+    sf::RectangleShape overlay(sf::Vector2f(WINDOW_WIDTH, WINDOW_HEIGHT));
     overlay.setFillColor(sf::Color(0, 0, 0, 150));
     window.draw(overlay);
 
@@ -359,7 +369,7 @@ void Game::renderGameOver()
         finalScoreText->setString(msg);
         sf::FloatRect b = finalScoreText->getLocalBounds();
         finalScoreText->setOrigin(sf::Vector2f(b.size.x / 2.0f, b.size.y / 2.0f));
-        finalScoreText->setPosition(sf::Vector2f(400.0f, 290.0f));
+        finalScoreText->setPosition(sf::Vector2f(WINDOW_WIDTH / 2.0f, 360.0f));
         finalScoreText->setFillColor(newHigh ? sf::Color(255, 220, 80) : sf::Color::White);
         window.draw(*finalScoreText);
     }
@@ -529,11 +539,9 @@ void Game::drawHUD()
 
 void Game::spawnRandomBonus()
 {
-    // Random position in the playable area (avoiding edges).
-    float x = static_cast<float>(std::rand() % 700 + 50);
-    float y = static_cast<float>(std::rand() % 500 + 50);
+    float x = static_cast<float>(std::rand() % (WINDOW_WIDTH - 100) + 50);
+    float y = static_cast<float>(std::rand() % (WINDOW_HEIGHT - 100) + 50);
 
-    // Pick one of three bonus types with equal probability.
     int type = std::rand() % 3;
     switch (type)
     {
@@ -552,7 +560,7 @@ void Game::startNewGame()
     enemySpawnTimer = enemySpawnInterval;
     bonusSpawnTimer = bonusSpawnInterval;
 
-    objects.emplace_back(std::make_unique<PlayerTank>(400.0f, 300.0f));
+    objects.emplace_back(std::make_unique<PlayerTank>(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f));
     loadLevel(1);
 
     state = GameState::Playing;
@@ -585,29 +593,27 @@ void Game::loadLevel(int level)
 
 void Game::spawnWallsLevel1()
 {
-    // Original 4-wall layout: open arena.
-    objects.emplace_back(std::make_unique<Wall>(100.0f, 100.0f, 40.0f, 200.0f, 3));
-    objects.emplace_back(std::make_unique<Wall>(600.0f, 200.0f, 40.0f, 200.0f, 3));
-    objects.emplace_back(std::make_unique<Wall>(300.0f, 450.0f, 200.0f, 40.0f, 3));
-    objects.emplace_back(std::make_unique<Wall>(300.0f, 100.0f, 200.0f, 40.0f, 3));
+    objects.emplace_back(std::make_unique<Wall>(150.0f, 150.0f, 40.0f, 250.0f, 3));
+    objects.emplace_back(std::make_unique<Wall>(820.0f, 250.0f, 40.0f, 250.0f, 3));
+    objects.emplace_back(std::make_unique<Wall>(400.0f, 580.0f, 240.0f, 40.0f, 3));
+    objects.emplace_back(std::make_unique<Wall>(400.0f, 150.0f, 240.0f, 40.0f, 3));
 }
 
 void Game::spawnWallsLevel2()
 {
-    // Tighter layout: more walls, corridors, harder to navigate.
     // Four corner pillars
-    objects.emplace_back(std::make_unique<Wall>(80.0f,  80.0f,  40.0f, 100.0f, 3));
-    objects.emplace_back(std::make_unique<Wall>(80.0f,  420.0f, 40.0f, 100.0f, 3));
-    objects.emplace_back(std::make_unique<Wall>(680.0f, 80.0f,  40.0f, 100.0f, 3));
-    objects.emplace_back(std::make_unique<Wall>(680.0f, 420.0f, 40.0f, 100.0f, 3));
+    objects.emplace_back(std::make_unique<Wall>(120.0f,  100.0f, 40.0f, 130.0f, 3));
+    objects.emplace_back(std::make_unique<Wall>(120.0f,  540.0f, 40.0f, 130.0f, 3));
+    objects.emplace_back(std::make_unique<Wall>(870.0f,  100.0f, 40.0f, 130.0f, 3));
+    objects.emplace_back(std::make_unique<Wall>(870.0f,  540.0f, 40.0f, 130.0f, 3));
 
     // Two horizontal walls forming corridors
-    objects.emplace_back(std::make_unique<Wall>(200.0f, 200.0f, 160.0f, 40.0f, 3));
-    objects.emplace_back(std::make_unique<Wall>(440.0f, 360.0f, 160.0f, 40.0f, 3));
+    objects.emplace_back(std::make_unique<Wall>(280.0f, 260.0f, 200.0f, 40.0f, 3));
+    objects.emplace_back(std::make_unique<Wall>(560.0f, 460.0f, 200.0f, 40.0f, 3));
 
     // Two vertical center pillars
-    objects.emplace_back(std::make_unique<Wall>(380.0f, 100.0f, 40.0f, 120.0f, 3));
-    objects.emplace_back(std::make_unique<Wall>(380.0f, 380.0f, 40.0f, 120.0f, 3));
+    objects.emplace_back(std::make_unique<Wall>(490.0f, 130.0f, 40.0f, 160.0f, 3));
+    objects.emplace_back(std::make_unique<Wall>(490.0f, 490.0f, 40.0f, 160.0f, 3));
 }
 
 void Game::checkLevelProgression()

@@ -4,6 +4,7 @@
 #include "AssetManager.h"
 #include "Config.h"
 #include <cmath>
+#include "Game.h"     // for WINDOW_WIDTH/HEIGHT constants
 
 Bullet::Bullet(float x, float y, sf::Vector2f direction, int damage,
                const std::string& textureName, bool fromEnemy)
@@ -47,7 +48,8 @@ void Bullet::update(float dt, std::vector<std::unique_ptr<GameObject>>& objects)
     if (sprite.has_value())
         sprite->setPosition(position);
 
-    if (position.x < 0 || position.x > 800 || position.y < 0 || position.y > 600)
+    if (position.x < 0 || position.x > WINDOW_WIDTH ||
+        position.y < 0 || position.y > WINDOW_HEIGHT)
         active = false;
 }
 

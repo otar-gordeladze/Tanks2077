@@ -14,6 +14,8 @@ private:
     float shieldTimer;
     float fastShootTimer;
     float fastMovementTimer;
+    // Time accumulator for the shield pulse animation.
+    float shieldPulseTime;
 
     bool collidesWithWall(float testX, float testY,
                           const std::vector<std::unique_ptr<GameObject>>& objects) const;
@@ -21,7 +23,8 @@ private:
 public:
     PlayerTank(float x, float y);
     void update(float dt, std::vector<std::unique_ptr<GameObject>>& objects) override;
-
+    
+    void draw(sf::RenderWindow& window) override;
     bool tryDamage(int amount);
     void grantShield(float duration);
     void grantFastShoot(float duration);

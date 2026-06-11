@@ -19,6 +19,9 @@ enum class GameState
     GameOver
 };
 
+// Window dimensions - referenced throughout the codebase.
+constexpr int WINDOW_WIDTH  = 1024;
+constexpr int WINDOW_HEIGHT = 768;
 
 class Game
 {
@@ -74,6 +77,10 @@ private:
     // Banner shown briefly when the level changes ("LEVEL 2!").
     std::optional<sf::Text> levelBannerText;
     std::optional<sf::Text> levelHudText;
+    // Background image drawn first each frame (under everything).
+    std::optional<sf::Sprite> backgroundSprite;
+
+
     // Seconds remaining for the banner to be visible. <= 0 means hidden.
     float levelBannerTimer;
     

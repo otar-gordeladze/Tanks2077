@@ -1,32 +1,44 @@
 // Bonus.cpp - shared implementation for all bonus pickups.
 
 #include "Bonus.h"
+#include "AssetManager.h"
 
-Bonus::Bonus(float x, float y, sf::Color color)
+Bonus::Bonus(float x, float y)
     : GameObject(x, y)
 {
-    // All bonuses are 24x24 colored squares with a white outline.
-    shape.setSize(sf::Vector2f(24.0f, 24.0f));
-    shape.setOrigin(sf::Vector2f(12.0f, 12.0f));   // center origin
-    shape.setFillColor(color);
-    shape.setOutlineColor(sf::Color::White);
-    shape.setOutlineThickness(2.0f);
-    shape.setPosition(position);
+    // sprite stays empty here - subclasses call initSprite() to populate it.
+}
+
+void Bonus::initSprite(const std::string& textureName)
+{
+    sf::Texture& texture = AssetManager::get().getTexture(textureName);
+    sprite.emplace(texture);
+
+    sf::Vector2u texSize = texture.getSize();
+    const float TARGET_SIZE = 36.0f;
+    float scale = TARGET_SIZE / static_cast<float>(texSize.x);
+    sprite->setScale(sf::Vector2f(scale, scale));
+
+    // Center origin = position is the middle of the bonus.
+    sprite->setOrigin(sf::Vector2f(texSize.x / 2.0f, texSize.y / 2.0f));
+    sprite->setPosition(position);
 }
 
 void Bonus::update(float dt, std::vector<std::unique_ptr<GameObject>>& objects)
 {
-    // Bonuses are passive - they don't move or change.
     (void)dt;
     (void)objects;
 }
 
 void Bonus::draw(sf::RenderWindow& window)
 {
-    window.draw(shape);
+    if (sprite.has_value())
+        window.draw(*sprite);
 }
 
 sf::FloatRect Bonus::getBounds() const
 {
-    return shape.getGlobalBounds();
+    if (sprite.has_value())
+        return sprite->getGlobalBounds();
+    return sf::FloatRect(position, sf::Vector2f(0, 0));
 }

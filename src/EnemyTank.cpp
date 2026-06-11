@@ -4,6 +4,7 @@
 #include "Wall.h"
 #include <cmath>
 #include <cstdlib>
+#include "Game.h"
 
 EnemyTank::EnemyTank(float x, float y, int hp, float speed,
                      float changeInterval, int scoreValue,
@@ -52,8 +53,8 @@ void EnemyTank::update(float dt, std::vector<std::unique_ptr<GameObject>>& objec
     float newX = position.x + direction.x * speed * dt;
     float newY = position.y + direction.y * speed * dt;
 
-    const float HALF = 50.0f * 0.7f / 2.0f;
-    const float SIZE = 50.0f * 0.7f;
+    const float HALF = 70.0f * 0.7f / 2.0f;
+    const float SIZE = 70.0f * 0.7f;
     sf::FloatRect testBounds(sf::Vector2f(newX - HALF, newY - HALF),
                           sf::Vector2f(SIZE, SIZE));
 
@@ -68,7 +69,8 @@ void EnemyTank::update(float dt, std::vector<std::unique_ptr<GameObject>>& objec
             break;
         }
     }
-    if (newX < 20.0f || newX > 780.0f || newY < 20.0f || newY > 580.0f)
+    if (newX < 20.0f || newX > (WINDOW_WIDTH - 20.0f) ||
+        newY < 20.0f || newY > (WINDOW_HEIGHT - 20.0f))
         blocked = true;
 
     if (blocked)

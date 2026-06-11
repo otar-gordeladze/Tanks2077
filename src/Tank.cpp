@@ -31,7 +31,7 @@ void Tank::initSprite(const std::string& textureName)
     sprite.emplace(texture);
 
     sf::Vector2u texSize = texture.getSize();
-    const float TARGET_SIZE = 50.0f;
+    const float TARGET_SIZE = 70.0f;
     float scaleX = TARGET_SIZE / static_cast<float>(texSize.x);
     float scaleY = TARGET_SIZE / static_cast<float>(texSize.y);
     sprite->setScale(sf::Vector2f(scaleX, scaleY));

@@ -1,43 +1,59 @@
-// Wall.cpp - implementation of the destructible wall.
+// Wall.cpp - destructible textured wall (tiled).
 
 #include "Wall.h"
+#include "AssetManager.h"
+#include <algorithm>
 
-Wall::Wall(float x, float y, float width, float height, int hp)
-    : GameObject(x, y), hp(hp)
+Wall::Wall(float x, float y, float w, float h, int hp)
+    : GameObject(x, y), hp(hp), maxHp(hp), width(w), height(h)
 {
-    shape.setSize(sf::Vector2f(width, height));
-    shape.setFillColor(sf::Color(120, 90, 60));      // brown
-    shape.setOutlineColor(sf::Color(60, 45, 30));    // darker brown outline
-    shape.setOutlineThickness(2.0f);
+    sf::Texture& texture = AssetManager::get().getTexture("wall");
+    texture.setRepeated(true);
 
-    // For walls we DON'T center the origin - position = top-left corner,
-    // which is the most natural way to place walls on a grid.
-    shape.setPosition(position);
+    sprite.emplace(texture);
+
+    // Tile the texture instead of stretching: scale + texture rect math.
+    const float SCALE = 0.08f;     // adjust if you have a differently-sized wall.png
+    sprite->setTextureRect(sf::IntRect(
+        sf::Vector2i(0, 0),
+        sf::Vector2i(static_cast<int>(w / SCALE),
+                     static_cast<int>(h / SCALE))
+    ));
+    sprite->setScale(sf::Vector2f(SCALE, SCALE));
+
+    sprite->setPosition(position);
 }
 
 void Wall::update(float dt, std::vector<std::unique_ptr<GameObject>>& objects)
 {
-    // Walls are static - nothing to update.
-    // The (void) casts silence "unused parameter" warnings.
     (void)dt;
     (void)objects;
 }
 
 void Wall::draw(sf::RenderWindow& window)
 {
-    window.draw(shape);
+    if (sprite.has_value())
+        window.draw(*sprite);
 }
 
 sf::FloatRect Wall::getBounds() const
 {
-    return shape.getGlobalBounds();
+    if (sprite.has_value())
+        return sprite->getGlobalBounds();
+    return sf::FloatRect(position, sf::Vector2f(width, height));
 }
 
 void Wall::takeDamage(int amount)
 {
     hp -= amount;
-    if (hp <= 0)
+
+    if (sprite.has_value() && maxHp > 0)
     {
-        active = false;
+        float ratio = static_cast<float>(hp) / static_cast<float>(maxHp);
+        std::uint8_t brightness = static_cast<std::uint8_t>(80 + 175 * std::max(0.0f, ratio));
+        sprite->setColor(sf::Color(brightness, brightness, brightness, 255));
     }
+
+    if (hp <= 0)
+        active = false;
 }

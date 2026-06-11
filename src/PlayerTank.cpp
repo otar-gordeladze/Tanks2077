@@ -18,7 +18,8 @@ PlayerTank::PlayerTank(float x, float y)
       damageInvulnerability(0.0f),
       shieldTimer(0.0f),
       fastShootTimer(0.0f),
-      fastMovementTimer(0.0f)
+      fastMovementTimer(0.0f),
+      shieldPulseTime(0.0f)
 {
     initSprite("player_tank");
 }
@@ -78,22 +79,27 @@ void PlayerTank::update(float dt, std::vector<std::unique_ptr<GameObject>>& obje
         shoot(objects);     // inherited from Tank; handles cooldown internally
 
     // --- Visual tint for buffs / damage flicker ---
+    // --- Shield pulse timer (advances animation) ---
+    if (shieldTimer > 0.0f)
+        shieldPulseTime += dt;
+    else
+        shieldPulseTime = 0.0f;
+
+    // --- Visual tint: damage flicker only (shield handled via glow in draw()) ---
     if (sprite.has_value())
     {
-        if (shieldTimer > 0.0f)
-            sprite->setColor(sf::Color(150, 200, 255, 255));
-        else if (damageInvulnerability > 0.0f)
-            sprite->setColor(sf::Color(255, 255, 255, 120));
+        if (damageInvulnerability > 0.0f)
+            sprite->setColor(sf::Color(255, 255, 255, 120));     // semi-transparent
         else
-            sprite->setColor(sf::Color(255, 255, 255, 255));
+            sprite->setColor(sf::Color(255, 255, 255, 255));     // normal
     }
 }
 
 bool PlayerTank::collidesWithWall(float testX, float testY,
                                    const std::vector<std::unique_ptr<GameObject>>& objects) const
 {
-    const float HALF = 50.0f * 0.7f / 2.0f;     // half of hitbox (= 17.5px)
-    const float SIZE = 50.0f * 0.7f;             // hitbox size (= 35px)
+    const float HALF = 70.0f * 0.7f / 2.0f;     // half of hitbox (= 17.5px)
+    const float SIZE = 70.0f * 0.7f;             // hitbox size (= 35px)
     sf::FloatRect testBounds(sf::Vector2f(testX - HALF, testY - HALF),
                           sf::Vector2f(SIZE, SIZE));
 
@@ -117,6 +123,31 @@ bool PlayerTank::tryDamage(int amount)
     damageInvulnerability = 1.0f;
     SoundPlayer::get().play("hit");
     return true;
+}
+
+
+void PlayerTank::draw(sf::RenderWindow& window)
+{
+    // If shield is active, draw a pulsing cyan glow circle behind the tank.
+    if (shieldTimer > 0.0f)
+    {
+        // Pulse alpha between ~80 and ~220 using a sine wave.
+        // sin(time * speed) returns -1..1, we map to 0..1, then scale to alpha range.
+        float pulse = (std::sin(shieldPulseTime * 6.0f) + 1.0f) / 2.0f;  // 0..1
+        std::uint8_t alpha = static_cast<std::uint8_t>(80 + pulse * 140);  // 80..220
+
+        sf::CircleShape glow(40.0f);    // radius slightly bigger than tank
+        glow.setOrigin(sf::Vector2f(40.0f, 40.0f));
+        glow.setPosition(position);
+        glow.setFillColor(sf::Color(80, 220, 255, alpha));         // cyan
+        glow.setOutlineColor(sf::Color(255, 255, 255, alpha));     // white edge
+        glow.setOutlineThickness(2.0f);
+
+        window.draw(glow);
+    }
+
+    // Then draw the tank sprite normally (inherited behavior).
+    Tank::draw(window);
 }
 
 void PlayerTank::grantShield(float duration)        { shieldTimer = duration; }
