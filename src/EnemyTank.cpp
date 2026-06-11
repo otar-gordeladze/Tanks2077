@@ -1,35 +1,32 @@
-// EnemyTank.cpp - implementation of shared enemy AI.
+// EnemyTank.cpp - shared enemy AI: random wandering + occasional firing.
 
 #include "EnemyTank.h"
 #include "Wall.h"
 #include <cmath>
-#include <cstdlib>     // for std::rand
-#include <ctime>       // for time-based RNG seeding
+#include <cstdlib>
 
 EnemyTank::EnemyTank(float x, float y, int hp, float speed,
-                     float changeInterval, int scoreValue)
-    : Tank(x, y, hp, speed),
+                     float changeInterval, int scoreValue,
+                     const std::string& bulletTextureName,
+                     float aiShootInterval)
+    : Tank(x, y, hp, speed, bulletTextureName, aiShootInterval, true),    // is enemy
       direction(0.0f, 0.0f),
       directionChangeInterval(changeInterval),
       directionChangeTimer(changeInterval),
-      scoreValue(scoreValue)
+      scoreValue(scoreValue),
+      shootTimer(aiShootInterval),
+      aiShootInterval(aiShootInterval)
 {
     pickRandomDirection();
 }
 
 void EnemyTank::pickRandomDirection()
 {
-    // Pick one of 8 directions: N, NE, E, SE, S, SW, W, NW.
-    // rand() returns 0..RAND_MAX; % 8 gives 0..7.
     int dir = std::rand() % 8;
-
-    // Each direction is 45 degrees apart.
-    // The PI/4 is converted from degrees to radians.
     float angleRad = dir * (3.14159265f / 4.0f);
     direction.x = std::cos(angleRad);
     direction.y = std::sin(angleRad);
 
-    // Round-off may give tiny non-zero values; normalize to be safe.
     float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
     if (length > 0.0f)
     {
@@ -40,7 +37,10 @@ void EnemyTank::pickRandomDirection()
 
 void EnemyTank::update(float dt, std::vector<std::unique_ptr<GameObject>>& objects)
 {
-    // --- 1. Tick the timer; change direction periodically ---
+    // Tick down the shared shootCooldown (inherited from Tank).
+    if (shootCooldown > 0.0f) shootCooldown -= dt;
+
+    // --- Direction-change timer ---
     directionChangeTimer -= dt;
     if (directionChangeTimer <= 0.0f)
     {
@@ -48,11 +48,10 @@ void EnemyTank::update(float dt, std::vector<std::unique_ptr<GameObject>>& objec
         directionChangeTimer = directionChangeInterval;
     }
 
-    // --- 2. Try to move; if blocked by wall, pick a new direction ---
+    // --- Try to move; if blocked by a wall, pick a new direction ---
     float newX = position.x + direction.x * speed * dt;
     float newY = position.y + direction.y * speed * dt;
 
-    // Build a test rectangle at the new position.
     sf::FloatRect testBounds(sf::Vector2f(newX - 20.0f, newY - 20.0f),
                               sf::Vector2f(40.0f, 40.0f));
 
@@ -61,21 +60,17 @@ void EnemyTank::update(float dt, std::vector<std::unique_ptr<GameObject>>& objec
     {
         const Wall* wall = dynamic_cast<const Wall*>(obj.get());
         if (wall == nullptr || !wall->isActive()) continue;
-
         if (testBounds.findIntersection(wall->getBounds()).has_value())
         {
             blocked = true;
             break;
         }
     }
-
-    // Also bounce off window edges (treat them as invisible walls)
     if (newX < 20.0f || newX > 780.0f || newY < 20.0f || newY > 580.0f)
         blocked = true;
 
     if (blocked)
     {
-        // Pick a new direction and DON'T move this frame.
         pickRandomDirection();
     }
     else
@@ -84,13 +79,23 @@ void EnemyTank::update(float dt, std::vector<std::unique_ptr<GameObject>>& objec
         position.y = newY;
     }
 
-    // --- 3. Update rotation to face the movement direction ---
     rotation = std::atan2(direction.y, direction.x) * 180.0f / 3.14159265f;
 
-    // --- 4. Sync the visual shape ---
     if (sprite.has_value())
     {
         sprite->setPosition(position);
         sprite->setRotation(sf::degrees(rotation));
+    }
+
+    // --- AI shooting ---
+    // Counts down toward 0; when it hits 0, fire and reset (with a small random
+    // variation so all enemies don't shoot in sync).
+    shootTimer -= dt;
+    if (shootTimer <= 0.0f)
+    {
+        shoot(objects);   // inherited from Tank
+        // Re-arm with a randomized interval ±30%.
+        float jitter = ((std::rand() % 60) - 30) / 100.0f;     // -0.30 ... +0.29
+        shootTimer = aiShootInterval * (1.0f + jitter);
     }
 }

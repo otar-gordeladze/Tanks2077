@@ -1,10 +1,11 @@
 // Tank.h - abstract base class for any tank (player or enemy).
-// Holds shared data and the visible Sprite (loaded from AssetManager).
+// Holds shared data, the visible Sprite, and shared shooting logic.
 
 #pragma once
 
 #include "GameObject.h"
 #include <optional>
+#include <memory>
 
 class Tank : public GameObject
 {
@@ -13,18 +14,30 @@ protected:
     float speed;
     float rotation;
 
-    // The sprite is wrapped in std::optional because sf::Sprite requires a
-    // texture in its constructor. We can't easily build it in the initializer
-    // list before the texture name is known by the subclass, so we construct
-    // it in the body via .emplace().
     std::optional<sf::Sprite> sprite;
 
-    // Helper called by subclass constructors to load and configure the sprite.
-    // textureName is the key registered in AssetManager (e.g. "player_tank").
+    // --- Shooting infrastructure (shared by all tanks) ---
+
+    // Name of the bullet texture this tank fires (e.g. "player_bullet").
+    std::string bulletTextureName;
+
+    // Time remaining until this tank can shoot again.
+    float shootCooldown;
+
+    // Time between consecutive shots when at max fire rate.
+    float shootInterval;
+
     void initSprite(const std::string& textureName);
 
+    // Whether bullets fired by this tank damage the player (true) or enemies (false).
+    bool isEnemyTank;
+
 public:
-    Tank(float x, float y, int hp, float speed);
+    // Constructor now also takes the bullet texture name and base shoot interval.
+    Tank(float x, float y, int hp, float speed,
+     const std::string& bulletTextureName, float shootInterval,
+     bool isEnemyTank);
+
     virtual ~Tank() = default;
 
     void draw(sf::RenderWindow& window) override;
@@ -33,63 +46,11 @@ public:
 
     void takeDamage(int amount);
     int getHP() const { return hp; }
+
+    // Shared shooting logic. Subclasses call this when their logic decides to fire.
+    // Spawns a bullet in front of the tank in the current rotation direction.
+    void shoot(std::vector<std::unique_ptr<GameObject>>& objects);
+
+    // True if the tank is allowed to fire right now (cooldown has expired).
+    bool canShoot() const { return shootCooldown <= 0.0f; }
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Tank.h - abstract base class for any tank (player or enemy).
-// Holds shared data: HP, speed, direction, and the visible shape.
-// Subclasses (PlayerTank, EnemyTank) decide HOW to move - they override update().
-
-// #pragma once
-
-// #include "GameObject.h"
-
-// class Tank : public GameObject
-// {
-// protected:
-//     // Current health points. When <= 0, the tank dies (active = false).
-//     int hp;
-
-//     // Movement speed in pixels per second.
-//     float speed;
-
-//     // The visible shape - a colored rectangle. Later replaced with a textured Sprite.
-//     sf::RectangleShape shape;
-
-//     // The direction this tank is facing (angle in degrees, 0 = right, 90 = down).
-//     float rotation;
-
-// public:
-//     // Constructor: position, color, hp, and speed.
-//     Tank(float x, float y, sf::Color color, int hp, float speed);
-
-//     sf::FloatRect getBounds() const override;
-
-//     // Virtual destructor - because Tank is itself a base class (EnemyTank inherits from it).
-//     virtual ~Tank() = default;
-
-//     // We provide draw() here because all tanks draw the same way.
-//     // Tank is still abstract because update() remains pure virtual.
-//     void draw(sf::RenderWindow& window) override;
-
-//     // update() is still pure virtual - subclasses MUST implement it.
-//     void update(float dt, std::vector<std::unique_ptr<GameObject>>& objects) override = 0;
-
-//     // Inflict damage on this tank. If hp drops to 0 or below, mark as inactive.
-//     void takeDamage(int amount);
-
-//     // Getter so other code (UI, scoring) can read hp.
-//     int getHP() const { return hp; }
-// };

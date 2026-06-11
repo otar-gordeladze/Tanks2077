@@ -6,8 +6,9 @@
 #include <cmath>
 
 Bullet::Bullet(float x, float y, sf::Vector2f direction, int damage,
-               const std::string& textureName)
-    : GameObject(x, y), damage(damage)
+               const std::string& textureName, bool fromEnemy)
+    : GameObject(x, y), damage(damage), fromEnemy(fromEnemy)
+
 {
     float bulletSpeed = Config::get().getFloat("bullet_speed", 500.0f);
 
